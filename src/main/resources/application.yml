@@ -1,0 +1,22 @@
+server:
+  port: 8082
+spring:
+  datasource:
+    username: "root"
+    password: "root"
+    name: customer_data
+    url: jdbc:mysql://localhost:3306/customer_data?createDatabaseIfNotExist=true
+  sql:
+    init:
+      mode: always
+  application:
+    name: orm
+
+logging:
+  level:
+    org:
+      springframework:
+        boot:
+          autoconfigure: INFO
+        jdbc:
+          core: DEBUG
