@@ -25,7 +25,7 @@ val localDbProperties = DBConnectionDetails(
     url = "jdbc:mysql://localhost:3306/customer_data",
     driverClassName = "com.mysql.cj.jdbc.Driver",
     userName = "root",
-    password = "spreadshirt_local"
+    password = "root"
 )
 
 val localEntityDao = EntityDao.create(localDbProperties, readOnly = false)
