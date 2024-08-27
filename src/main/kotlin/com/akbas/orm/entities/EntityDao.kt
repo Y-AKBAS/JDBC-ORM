@@ -1,8 +1,8 @@
 package com.akbas.orm.entities
 
-import com.akbas.orm.config.DBConnectionDetails
 import com.akbas.orm.support.JdbcMappingManager
 import com.zaxxer.hikari.HikariDataSource
+import org.springframework.boot.autoconfigure.jdbc.JdbcConnectionDetails
 import org.springframework.boot.jdbc.DataSourceBuilder
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.jdbc.core.namedparam.SqlParameterSource
@@ -14,7 +14,7 @@ import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.jvmErasure
 
 class EntityDao private constructor(
-    val dataSource: DataSource,
+    private val dataSource: DataSource,
     val jdbcClient: JdbcClient,
     val namedTemplate: NamedParameterJdbcTemplate,
     private val readOnly: Boolean
@@ -24,8 +24,8 @@ class EntityDao private constructor(
 
         const val GENERATED_KEY = "GENERATED_KEY"
 
-        fun create(properties: DBConnectionDetails, readOnly: Boolean): EntityDao {
-            val dataSource = createDataSource(properties)
+        fun create(connectionDetails: JdbcConnectionDetails, readOnly: Boolean): EntityDao {
+            val dataSource = createDataSource(connectionDetails)
             val namedTemplate = NamedParameterJdbcTemplate(dataSource)
             val jdbcClient = JdbcClient.create(namedTemplate)
             return EntityDao(dataSource, jdbcClient, namedTemplate, readOnly)
@@ -37,13 +37,13 @@ class EntityDao private constructor(
             return EntityDao(dataSource, jdbcClient, namedTemplate, readOnly)
         }
 
-        private fun createDataSource(properties: DBConnectionDetails): DataSource {
+        private fun createDataSource(connectionDetails: JdbcConnectionDetails): DataSource {
             return DataSourceBuilder.create()
                 .type(HikariDataSource::class.java)
-                .url(properties.url)
-                .username(properties.userName)
-                .password(properties.password)
-                .driverClassName(properties.driverClassName)
+                .url(connectionDetails.jdbcUrl)
+                .username(connectionDetails.username)
+                .password(connectionDetails.password)
+                .driverClassName(connectionDetails.driverClassName)
                 .build()
         }
     }
