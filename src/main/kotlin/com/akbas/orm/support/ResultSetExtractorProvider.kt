@@ -1,11 +1,5 @@
 package com.akbas.orm.support
 
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.LocalTime
-import kotlinx.datetime.toKotlinLocalDate
-import kotlinx.datetime.toKotlinLocalDateTime
-import kotlinx.datetime.toKotlinLocalTime
 import java.math.BigDecimal
 import java.sql.Blob
 import java.sql.Clob
@@ -25,7 +19,7 @@ object ResultSetExtractorProvider {
         return extractorCache.getOrPut(clazz) { doGet(clazz) } as (rs: ResultSet, columnName: String) -> T?
     }
 
-    fun <T: Any> addForType(clazz: KClass<T>, extractor: (rs: ResultSet, columnName: String) -> T?) {
+    fun <T : Any> addForType(clazz: KClass<T>, extractor: (rs: ResultSet, columnName: String) -> T?) {
         extractorCache[clazz] = extractor
     }
 
@@ -62,22 +56,10 @@ object ResultSetExtractorProvider {
             return { rs, columnName -> rs.getClob(columnName) }
         } else if (clazz == java.time.LocalDate::class) {
             return { rs, columnName -> rs.getDate(columnName)?.toLocalDate() }
-        } else if (clazz == org.joda.time.LocalDate::class) {
-            return { rs, columnName -> rs.getDate(columnName)?.let { org.joda.time.LocalDate(it) } }
-        } else if (clazz == LocalDate::class) {
-            return { rs, columnName -> rs.getDate(columnName)?.toLocalDate()?.toKotlinLocalDate() }
         } else if (clazz == java.time.LocalTime::class) {
             return { rs, columnName -> rs.getTime(columnName)?.toLocalTime() }
-        } else if (clazz == org.joda.time.LocalTime::class) {
-            return { rs, columnName -> rs.getTime(columnName)?.let { org.joda.time.LocalTime(it) } }
-        } else if (clazz == LocalTime::class) {
-            return { rs, columnName -> rs.getTime(columnName)?.toLocalTime()?.toKotlinLocalTime() }
         } else if (clazz == java.time.LocalDateTime::class) {
             return { rs, columnName -> rs.getTimestamp(columnName)?.toLocalDateTime() }
-        } else if (clazz == org.joda.time.LocalDateTime::class) {
-            return { rs, columnName -> rs.getTimestamp(columnName)?.let { org.joda.time.LocalDateTime(it) } }
-        } else if (clazz == LocalDateTime::class) {
-            return { rs, columnName -> rs.getTimestamp(columnName)?.toLocalDateTime()?.toKotlinLocalDateTime() }
         } else if (clazz.java.isEnum) {
             val enumConstantsArray = clazz.java.enumConstants
             val enumConstants: Set<Enum<*>> = enumConstantsArray.mapTo(HashSet(enumConstantsArray.size)) { it as Enum<*> }
