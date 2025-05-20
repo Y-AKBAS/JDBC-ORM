@@ -4,10 +4,12 @@ import com.akbas.orm.support.JdbcMappingManager
 import com.zaxxer.hikari.HikariDataSource
 import org.springframework.boot.autoconfigure.jdbc.JdbcConnectionDetails
 import org.springframework.boot.jdbc.DataSourceBuilder
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.jdbc.core.namedparam.SqlParameterSource
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.jdbc.support.GeneratedKeyHolder
+import java.util.stream.Stream
 import javax.sql.DataSource
 import kotlin.reflect.cast
 import kotlin.reflect.full.primaryConstructor
@@ -26,13 +28,15 @@ class EntityDao private constructor(
 
         fun create(connectionDetails: JdbcConnectionDetails, readOnly: Boolean): EntityDao {
             val dataSource = createDataSource(connectionDetails)
-            val namedTemplate = NamedParameterJdbcTemplate(dataSource)
+            val jdbcTemplate = JdbcTemplate(dataSource).apply { fetchSize = Int.MIN_VALUE }
+            val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
             val jdbcClient = JdbcClient.create(namedTemplate)
             return EntityDao(dataSource, jdbcClient, namedTemplate, readOnly)
         }
 
         fun create(dataSource: DataSource, readOnly: Boolean): EntityDao {
-            val namedTemplate = NamedParameterJdbcTemplate(dataSource)
+            val jdbcTemplate = JdbcTemplate(dataSource).apply { fetchSize = Int.MIN_VALUE }
+            val namedTemplate = NamedParameterJdbcTemplate(jdbcTemplate)
             val jdbcClient = JdbcClient.create(namedTemplate)
             return EntityDao(dataSource, jdbcClient, namedTemplate, readOnly)
         }
@@ -111,12 +115,41 @@ class EntityDao private constructor(
         return entities
     }
 
+    inline fun <reified T : Any> streamAll(sql: String, params: List<*>? = null, namedParams: SqlParameterSource? = null): Stream<T> {
+        val mappingManager = JdbcMappingManager.of(T::class)
+        val mapper = mappingManager.mapper
+        if (params == null && namedParams == null) return jdbcClient.sql(sql).query(mapper).stream()
+
+        if (params != null && namedParams != null) throw IllegalArgumentException("Either params or namedParams should be provided!")
+
+        val entities = if (params != null) {
+            return jdbcClient.sql(sql)
+                .params(params)
+                .query(mappingManager.mapper)
+                .stream()
+        } else {
+            namedTemplate.queryForStream(sql, namedParams!!, mappingManager.mapper)
+        }
+
+        return entities
+    }
+
     inline fun <reified T : Any> findAll(): List<T> {
         val mappingManager = JdbcMappingManager.of(T::class)
         val sql = mappingManager.sqlGenerator.findAllSql
         val entities: List<T> = jdbcClient.sql(sql)
             .query(mappingManager.mapper)
             .list()
+
+        return entities
+    }
+
+    inline fun <reified T : Any> streamAll(): Stream<T> {
+        val mappingManager = JdbcMappingManager.of(T::class)
+        val sql = mappingManager.sqlGenerator.findAllSql
+        val entities: Stream<T> = jdbcClient.sql(sql)
+            .query(mappingManager.mapper)
+            .stream()
 
         return entities
     }
